@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/workspace/RoboND-PathPlanning/catkin_ws/install/setup.sh
