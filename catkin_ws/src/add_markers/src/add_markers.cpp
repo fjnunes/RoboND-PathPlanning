@@ -31,15 +31,80 @@
 // %Tag(INCLUDES)%
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/Point.h>
+
 // %EndTag(INCLUDES)%
 
 // %Tag(INIT)%
+
+ros::Publisher marker_pub;
+visualization_msgs::Marker marker;
+geometry_msgs::Point pickup_position;
+geometry_msgs::Point dropoff_position;
+const float distance_threshold = 0.2;
+bool hasObject;
+
+float euclidean_distance(geometry_msgs::Point pointA, geometry_msgs::Point pointB) 
+{
+  return sqrt(fabs(pow(pointB.x - pointA.x, 2) - pow(pointB.y - pointA.y, 2))); 
+}
+
+void amclPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
+{
+    // ROS_INFO("x: [%f], y: [%f]", msg->pose.pose.position.x,msg->pose.pose.position.y);
+  
+    geometry_msgs::Point current_position = msg->pose.pose.position;
+
+  	float pickup_distance = euclidean_distance(current_position, pickup_position);
+  	float dropoff_distance = euclidean_distance(current_position, dropoff_position);
+
+    // ROS_INFO("Pickup-> [%f], Dropoff-> [%f]", pickup_distance, dropoff_distance); 
+  
+    if (!hasObject && (pickup_distance <= distance_threshold))
+    {
+        ROS_INFO("Reached pickup position");
+        // Pause 5 seconds
+        ROS_INFO("Waiting 5 seconds");
+        ros::Duration(5.0).sleep();
+        // Hide the marker
+        ROS_INFO("Hiding the marker");
+        marker.action = visualization_msgs::Marker::DELETE;
+        marker_pub.publish(marker);
+        hasObject = true;
+    }
+    else if (hasObject && (dropoff_distance <= distance_threshold))
+    {
+        ROS_INFO("Reached dropoff position");
+        // Pause 5 seconds
+        ROS_INFO("Waiting 5 seconds");
+        ros::Duration(5.0).sleep();
+        // Publish the marker at the drop off zone
+        ROS_INFO("Publishing the marker at the drop off zone");
+        marker.pose.position = dropoff_position;
+        marker.action = visualization_msgs::Marker::ADD;
+        marker_pub.publish(marker);
+        hasObject = false;
+    }
+}
+
 int main( int argc, char** argv )
 {
-  ros::init(argc, argv, "basic_shapes");
+  ros::init(argc, argv, "add_markers");
   ros::NodeHandle n;
   ros::Rate r(1);
-  ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 1);
+  marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 1);
+  ros::Subscriber amcl_pose_sub = n.subscribe("amcl_pose", 2, amclPoseCallback);
+  
+  hasObject = false;
+  pickup_position.x = 4.0;
+  pickup_position.y = 6.0;
+  pickup_position.z = 0.0;
+
+  dropoff_position.x = -3.0;
+  dropoff_position.y = 4.0;
+  dropoff_position.z = 0.0;
+  
 // %EndTag(INIT)%
 
   // Set our initial shape type to be a cube
@@ -50,7 +115,6 @@ int main( int argc, char** argv )
 // %Tag(MARKER_INIT)%
 //  while (ros::ok())
 //  {
-    visualization_msgs::Marker marker;
     // Set the frame ID and timestamp.  See the TF tutorials for information on these.
     marker.header.frame_id = "/map";
     marker.header.stamp = ros::Time::now();
@@ -86,9 +150,9 @@ int main( int argc, char** argv )
 
     // Set the scale of the marker -- 1x1x1 here means 1m on a side
 // %Tag(SCALE)%
-    marker.scale.x = 0.5;
-    marker.scale.y = 0.5;
-    marker.scale.z = 0.5;
+    marker.scale.x = 0.3;
+    marker.scale.y = 0.3;
+    marker.scale.z = 0.3;
 // %EndTag(SCALE)%
 
     // Set the color -- be sure to set alpha to something non-zero!
@@ -117,48 +181,19 @@ int main( int argc, char** argv )
   
     // Publish the marker at the pickup zone
     ROS_INFO("Publishing the marker at the pickup zone");
-    marker.pose.position.x = 4.0;
-    marker.pose.position.y = 6.0;
+    marker.pose.position = pickup_position;
     marker.action = visualization_msgs::Marker::ADD;
     marker_pub.publish(marker);
-    // Pause 5 seconds
-    ROS_INFO("Waiting 5 seconds");
-    ros::Duration(5.0).sleep();
-    // Hide the marker
-    ROS_INFO("Hiding the marker");
-    marker.action = visualization_msgs::Marker::DELETE;
-    marker_pub.publish(marker);
-    // Pause 5 seconds
-    ROS_INFO("Waiting 5 seconds");
-    ros::Duration(5.0).sleep();
-    // Publish the marker at the drop off zone
-    ROS_INFO("Publishing the marker at the drop off zone");
-    marker.pose.position.x = -3.0;
-    marker.pose.position.y = 4.0;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker_pub.publish(marker);
-    ros::Duration(1.0).sleep();
+
+  
+  /**
+   ros::spin() will enter a loop, pumping callbacks.  With this version, all
+   callbacks will be called from within this thread (the main one).  ros::spin()
+   will exit when Ctrl-C is pressed, or the node is shutdown by the master.
+  */
+    ros::spin();
   
 // %EndTag(PUBLISH)%
-
-    // Cycle between different shapes
-// %Tag(CYCLE_SHAPES)%
-//     switch (shape)
-//     {
-//     case visualization_msgs::Marker::CUBE:
-//       shape = visualization_msgs::Marker::SPHERE;
-//       break;
-//     case visualization_msgs::Marker::SPHERE:
-//       shape = visualization_msgs::Marker::ARROW;
-//       break;
-//     case visualization_msgs::Marker::ARROW:
-//       shape = visualization_msgs::Marker::CYLINDER;
-//       break;
-//     case visualization_msgs::Marker::CYLINDER:
-//       shape = visualization_msgs::Marker::CUBE;
-//       break;
-//     }
-// %EndTag(CYCLE_SHAPES)%
 
 // %Tag(SLEEP_END)%
 //    r.sleep();

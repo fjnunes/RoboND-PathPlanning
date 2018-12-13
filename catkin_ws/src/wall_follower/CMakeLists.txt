@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(home_service_robot)
+project(wall_follower)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -108,7 +108,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES home_service_robot
+#  LIBRARIES wall_follower
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 )
@@ -126,7 +126,7 @@ ${catkin_INCLUDE_DIRS}
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/home_service_robot.cpp
+#   src/${PROJECT_NAME}/wall_follower.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -197,7 +197,7 @@ target_link_libraries(wall_follower ${catkin_LIBRARIES})
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_home_service_robot.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_wall_follower.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
